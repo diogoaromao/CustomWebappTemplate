@@ -1,0 +1,55 @@
+﻿{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Diogo Romao",
+  "classifications": [ "Web", "API", "Vue" ],
+  "identity": "MyTemplate.WebAppVue",
+  "name": "ASP.NET Core Web API with Vue.js",
+  "shortName": "webappvue",
+  "sourceName": "MyTemplate",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "parameters": {
+    "Framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net9.0",
+          "description": "Target .NET 9.0"
+        }
+      ],
+      "defaultValue": "net9.0",
+      "replaces": "net9.0"
+    },
+    "UseHttps": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "true",
+      "description": "Whether to use HTTPS"
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "condition": "(!UseHttps)",
+          "exclude": [
+            "src/MyTemplate.Api/Properties/launchSettings.json"
+          ]
+        }
+      ]
+    }
+  ],
+  "symbols": {
+    "TargetFrameworkOverride": {
+      "type": "derived",
+      "valueSource": "Framework",
+      "fileRename": "net9.0",
+      "replaces": "net9.0"
+    }
+  }
+}
