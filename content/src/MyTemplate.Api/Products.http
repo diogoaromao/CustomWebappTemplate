@@ -1,0 +1,38 @@
+### Get all products
+GET https://localhost:7000/api/products?page=1&pageSize=10
+
+### Get product by ID
+GET https://localhost:7000/api/products/1
+
+### Create a new product
+POST https://localhost:7000/api/products
+Content-Type: application/json
+
+{
+  "name": "New Product",
+  "description": "A brand new product",
+  "price": 49.99
+}
+
+### Update an existing product
+PUT https://localhost:7000/api/products/1
+Content-Type: application/json
+
+{
+  "name": "Updated Product",
+  "description": "An updated product description",
+  "price": 59.99
+}
+
+### Delete a product
+DELETE https://localhost:7000/api/products/1
+
+### Test validation - invalid product (empty name)
+POST https://localhost:7000/api/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "description": "This should fail validation",
+  "price": -10
+}
