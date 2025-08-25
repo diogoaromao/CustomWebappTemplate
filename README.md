@@ -11,7 +11,16 @@ A .NET template that combines ASP.NET Core Web API with Vue.js frontend in a sin
 
 ## Installation
 
-### Option 1: Download and Install Locally
+### PowerShell (Windows)
+```powershell
+# Download the template package
+Invoke-WebRequest -Uri "https://github.com/diogoaromao/CustomWebappTemplate/releases/latest/download/DiogoRomao.CustomWebappTemplate.1.0.3.nupkg" -OutFile "DiogoRomao.CustomWebappTemplate.nupkg"
+
+# Install the template
+dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
+```
+
+### Bash (Linux/macOS)
 ```bash
 # Download the template package
 curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/CustomWebappTemplate/releases/latest/download/DiogoRomao.CustomWebappTemplate.1.0.3.nupkg
@@ -20,14 +29,10 @@ curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/
 dotnet new install ./DiogoRomao.CustomWebappTemplate.nupkg
 ```
 
-### Option 2: Install from GitHub Release
-```bash
-# Download the latest release package
-wget https://github.com/diogoaromao/CustomWebappTemplate/releases/latest/download/DiogoRomao.CustomWebappTemplate.1.0.3.nupkg
-
-# Install the template
-dotnet new install ./DiogoRomao.CustomWebappTemplate.1.0.3.nupkg
-```
+### Alternative: Direct Download
+1. Go to [Releases](https://github.com/diogoaromao/CustomWebappTemplate/releases/latest)
+2. Download `DiogoRomao.CustomWebappTemplate.1.0.3.nupkg`
+3. Run `dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg`
 
 ## Usage
 
