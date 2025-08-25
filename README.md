@@ -13,8 +13,8 @@ A .NET template that combines ASP.NET Core Web API with Vue.js frontend in a sin
 
 ### PowerShell (Windows)
 ```powershell
-# Download the template package
-Invoke-WebRequest -Uri "https://github.com/diogoaromao/CustomWebappTemplate/releases/latest/download/DiogoRomao.CustomWebappTemplate.1.0.3.nupkg" -OutFile "DiogoRomao.CustomWebappTemplate.nupkg"
+# Download the template package (replace with latest version number)
+Invoke-WebRequest -Uri "https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.5/DiogoRomao.CustomWebappTemplate.1.0.5.nupkg" -OutFile "DiogoRomao.CustomWebappTemplate.nupkg"
 
 # Install the template
 dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
@@ -22,17 +22,17 @@ dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
 
 ### Bash (Linux/macOS)
 ```bash
-# Download the template package
-curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/CustomWebappTemplate/releases/latest/download/DiogoRomao.CustomWebappTemplate.1.0.3.nupkg
+# Download the template package (replace with latest version number)
+curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.5/DiogoRomao.CustomWebappTemplate.1.0.5.nupkg
 
 # Install the template
 dotnet new install ./DiogoRomao.CustomWebappTemplate.nupkg
 ```
 
-### Alternative: Direct Download
+### Easy Method: Manual Download
 1. Go to [Releases](https://github.com/diogoaromao/CustomWebappTemplate/releases/latest)
-2. Download `DiogoRomao.CustomWebappTemplate.1.0.3.nupkg`
-3. Run `dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg`
+2. Download the latest `.nupkg` file
+3. Run `dotnet new install .\[downloaded-file-name].nupkg`
 
 ### Troubleshooting
 
