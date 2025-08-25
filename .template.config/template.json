@@ -34,6 +34,8 @@
   },
   "sources": [
     {
+      "source": "content/",
+      "target": "./",
       "modifiers": [
         {
           "condition": "(!UseHttps)",
@@ -41,12 +43,6 @@
             "src/MyTemplate.Api/Properties/launchSettings.json"
           ]
         }
-      ],
-      "exclude": [
-        ".github/workflows/release.yml",
-        "CustomWebappTemplate.nuspec",
-        "Template.csproj",
-        "CLAUDE.md"
       ]
     }
   ],

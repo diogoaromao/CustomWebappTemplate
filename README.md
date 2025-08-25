@@ -34,6 +34,17 @@ dotnet new install ./DiogoRomao.CustomWebappTemplate.nupkg
 2. Download `DiogoRomao.CustomWebappTemplate.1.0.3.nupkg`
 3. Run `dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg`
 
+### Troubleshooting
+
+If you get "File already exists" error:
+```powershell
+# Uninstall the existing template first
+dotnet new uninstall DiogoRomao.CustomWebappTemplate
+
+# Then install the new version
+dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
+```
+
 ## Usage
 
 Create a new project using the template:
