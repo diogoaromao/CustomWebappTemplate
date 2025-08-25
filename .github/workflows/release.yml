@@ -18,20 +18,14 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Install NuGet CLI
-      run: |
-        wget -q https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
-        sudo mv nuget.exe /usr/local/bin/nuget
-        sudo chmod +x /usr/local/bin/nuget
-        
     - name: Create NuGet package
       run: |
-        # Update version in nuspec from git tag
+        # Extract version from git tag
         TAG_VERSION=${GITHUB_REF#refs/tags/v}
-        sed -i "s/<version>1\.0\.0<\/version>/<version>$TAG_VERSION<\/version>/" CustomWebappTemplate.nuspec
+        echo "Creating package version: $TAG_VERSION"
         
-        # Create the package
-        mono /usr/local/bin/nuget pack CustomWebappTemplate.nuspec -OutputDirectory ./packages
+        # Create the package using dotnet pack
+        dotnet pack Template.csproj --configuration Release --output ./packages -p:PackageVersion=$TAG_VERSION
         
     - name: Create Release
       uses: softprops/action-gh-release@v2

@@ -45,6 +45,7 @@
       "exclude": [
         ".github/workflows/release.yml",
         "CustomWebappTemplate.nuspec",
+        "Template.csproj",
         "CLAUDE.md"
       ]
     }
