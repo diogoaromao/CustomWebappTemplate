@@ -41,6 +41,11 @@
             "src/MyTemplate.Api/Properties/launchSettings.json"
           ]
         }
+      ],
+      "exclude": [
+        ".github/workflows/release.yml",
+        "CustomWebappTemplate.nuspec",
+        "CLAUDE.md"
       ]
     }
   ],

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>DiogoRomao.CustomWebappTemplate</id>
+    <version>1.0.0</version>
+    <authors>Diogo Romao</authors>
+    <description>A custom web application template combining ASP.NET Core Web API with Vue.js frontend</description>
+    <projectUrl>https://github.com/diogoaromao/CustomWebappTemplate</projectUrl>
+    <repository type="git" url="https://github.com/diogoaromao/CustomWebappTemplate.git" />
+    <tags>dotnet-template aspnetcore vue webapi</tags>
+    <packageTypes>
+      <packageType name="Template" />
+    </packageTypes>
+    <license type="expression">MIT</license>
+    <readme>README.md</readme>
+  </metadata>
+  <files>
+    <file src="**" exclude="bin/**;obj/**;.git/**;*.nupkg" />
+  </files>
+</package>

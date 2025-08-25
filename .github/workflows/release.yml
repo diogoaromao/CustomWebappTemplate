@@ -1,0 +1,42 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Install NuGet CLI
+      run: |
+        wget -q https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+        sudo mv nuget.exe /usr/local/bin/nuget
+        sudo chmod +x /usr/local/bin/nuget
+        
+    - name: Create NuGet package
+      run: |
+        # Update version in nuspec from git tag
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        sed -i "s/<version>1\.0\.0<\/version>/<version>$TAG_VERSION<\/version>/" CustomWebappTemplate.nuspec
+        
+        # Create the package
+        mono /usr/local/bin/nuget pack CustomWebappTemplate.nuspec -OutputDirectory ./packages
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ./packages/*.nupkg
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

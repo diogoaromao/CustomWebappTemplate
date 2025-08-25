@@ -1,10 +1,11 @@
 name: Build and Deploy
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+# DISABLED - Enable this workflow for your project by uncommenting the trigger below
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
 
 env:
   REGISTRY: docker.io
