@@ -14,7 +14,7 @@ A .NET template that combines ASP.NET Core Web API with Vue.js frontend in a sin
 ### PowerShell (Windows)
 ```powershell
 # Download the template package (replace with latest version number)
-Invoke-WebRequest -Uri "https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.5/DiogoRomao.CustomWebappTemplate.1.0.5.nupkg" -OutFile "DiogoRomao.CustomWebappTemplate.nupkg"
+Invoke-WebRequest -Uri "https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.6/DiogoRomao.CustomWebappTemplate.1.0.6.nupkg" -OutFile "DiogoRomao.CustomWebappTemplate.nupkg"
 
 # Install the template
 dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
@@ -23,7 +23,7 @@ dotnet new install .\DiogoRomao.CustomWebappTemplate.nupkg
 ### Bash (Linux/macOS)
 ```bash
 # Download the template package (replace with latest version number)
-curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.5/DiogoRomao.CustomWebappTemplate.1.0.5.nupkg
+curl -L -o DiogoRomao.CustomWebappTemplate.nupkg https://github.com/diogoaromao/CustomWebappTemplate/releases/download/v1.0.6/DiogoRomao.CustomWebappTemplate.1.0.6.nupkg
 
 # Install the template
 dotnet new install ./DiogoRomao.CustomWebappTemplate.nupkg
