@@ -16,6 +16,7 @@
     <PackageReference Include="FluentValidation" Version="11.10.0" />
     <PackageReference Include="FluentValidation.DependencyInjection" Version="11.10.0" />
     <PackageReference Include="Carter" Version="8.2.1" />
+    <PackageReference Include="ErrorOr" Version="2.0.1" />
   </ItemGroup>
 
 </Project>

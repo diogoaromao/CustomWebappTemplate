@@ -1,0 +1,62 @@
+### Get cart for user
+GET https://localhost:7000/api/cart/user123
+
+### Add item to cart (depends on existing product)
+POST https://localhost:7000/api/cart/user123/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 2
+}
+
+### Add another item to cart
+POST https://localhost:7000/api/cart/user123/items
+Content-Type: application/json
+
+{
+  "productId": 2,
+  "quantity": 1
+}
+
+### Add same product again (should increase quantity)
+POST https://localhost:7000/api/cart/user123/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 1
+}
+
+### Get updated cart
+GET https://localhost:7000/api/cart/user123
+
+### Remove specific item from cart
+DELETE https://localhost:7000/api/cart/user123/items/2
+
+### Get cart after removal
+GET https://localhost:7000/api/cart/user123
+
+### Clear entire cart
+DELETE https://localhost:7000/api/cart/user123
+
+### Try to get empty cart
+GET https://localhost:7000/api/cart/user123
+
+### Test validation - add invalid product
+POST https://localhost:7000/api/cart/user123/items
+Content-Type: application/json
+
+{
+  "productId": 999,
+  "quantity": 1
+}
+
+### Test validation - invalid quantity
+POST https://localhost:7000/api/cart/user123/items
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 0
+}
