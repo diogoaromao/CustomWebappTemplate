@@ -38,11 +38,14 @@ public static class GetCart
         // In a real application, you would inject a repository or DbContext
         private static readonly Dictionary<string, Cart> _carts = new();
 
-        public Task<ErrorOr<Response>> Handle(Query request, CancellationToken cancellationToken)
+        public async Task<ErrorOr<Response>> Handle(Query request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             if (!_carts.TryGetValue(request.UserId, out var cart))
             {
-                return Task.FromResult<ErrorOr<Response>>(Errors.Cart.NotFound);
+                return Errors.Cart.NotFound;
             }
 
             var response = new Response
@@ -62,7 +65,7 @@ public static class GetCart
                 UpdatedAt = cart.UpdatedAt
             };
 
-            return Task.FromResult<ErrorOr<Response>>(response);
+            return response;
         }
     }
 }

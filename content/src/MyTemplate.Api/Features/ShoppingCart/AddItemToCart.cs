@@ -64,13 +64,16 @@ public static class AddItemToCart
 
         private static readonly Dictionary<string, Cart> _carts = new();
 
-        public Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
         {
+            // Simulate async database operations
+            await Task.Delay(10, cancellationToken);
+
             // Find the product (depends on Products feature)
             var product = _products.FirstOrDefault(p => p.Id == request.ProductId);
             if (product is null)
             {
-                return Task.FromResult<ErrorOr<Response>>(Errors.Product.NotFound);
+                return Errors.Product.NotFound;
             }
 
             // Get or create cart for user
@@ -119,7 +122,7 @@ public static class AddItemToCart
                 TotalItems = cart.TotalItems
             };
 
-            return Task.FromResult<ErrorOr<Response>>(response);
+            return response;
         }
     }
 }

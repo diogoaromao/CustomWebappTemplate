@@ -39,8 +39,11 @@ public static class GetProducts
             new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
         };
 
-        public Task<Response> Handle(Query request, CancellationToken cancellationToken)
+        public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             var skip = (request.Page - 1) * request.PageSize;
             var products = _products
                 .Skip(skip)
@@ -63,7 +66,7 @@ public static class GetProducts
                 PageSize = request.PageSize
             };
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

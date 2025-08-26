@@ -45,8 +45,11 @@ public static class CreateProduct
         private static readonly List<Product> _products = new();
         private static int _nextId = 1;
 
-        public Task<Response> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             var product = new Product
             {
                 Id = _nextId++,
@@ -68,7 +71,7 @@ public static class CreateProduct
                 CreatedAt = product.CreatedAt
             };
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

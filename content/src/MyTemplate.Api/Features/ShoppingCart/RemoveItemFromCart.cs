@@ -52,17 +52,20 @@ public static class RemoveItemFromCart
         // In a real application, you would inject a repository or DbContext
         private static readonly Dictionary<string, Cart> _carts = new();
 
-        public Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             if (!_carts.TryGetValue(request.UserId, out var cart))
             {
-                return Task.FromResult<ErrorOr<Response>>(Errors.Cart.NotFound);
+                return Errors.Cart.NotFound;
             }
 
             var item = cart.Items.FirstOrDefault(i => i.ProductId == request.ProductId);
             if (item is null)
             {
-                return Task.FromResult<ErrorOr<Response>>(Errors.Cart.ItemNotFound);
+                return Errors.Cart.ItemNotFound;
             }
 
             cart.Items.Remove(item);
@@ -83,7 +86,7 @@ public static class RemoveItemFromCart
                 TotalItems = cart.TotalItems
             };
 
-            return Task.FromResult<ErrorOr<Response>>(response);
+            return response;
         }
     }
 }

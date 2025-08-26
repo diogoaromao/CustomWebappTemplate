@@ -22,16 +22,17 @@ public static class DeleteProduct
             new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
         };
 
-        public Task Handle(Command request, CancellationToken cancellationToken)
+        public async Task Handle(Command request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             var product = _products.FirstOrDefault(p => p.Id == request.Id);
             
             if (product is null)
                 throw new NotFoundException(nameof(Product), request.Id);
 
             _products.Remove(product);
-            
-            return Task.CompletedTask;
         }
     }
 }

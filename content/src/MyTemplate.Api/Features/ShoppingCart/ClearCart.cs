@@ -30,17 +30,20 @@ public static class ClearCart
         // In a real application, you would inject a repository or DbContext
         private static readonly Dictionary<string, Cart> _carts = new();
 
-        public Task<ErrorOr<Success>> Handle(Command request, CancellationToken cancellationToken)
+        public async Task<ErrorOr<Success>> Handle(Command request, CancellationToken cancellationToken)
         {
+            // Simulate async database operation
+            await Task.Delay(10, cancellationToken);
+
             if (!_carts.TryGetValue(request.UserId, out var cart))
             {
-                return Task.FromResult<ErrorOr<Success>>(Errors.Cart.NotFound);
+                return Errors.Cart.NotFound;
             }
 
             cart.Items.Clear();
             cart.UpdatedAt = DateTime.UtcNow;
 
-            return Task.FromResult<ErrorOr<Success>>(Result.Success);
+            return Result.Success;
         }
     }
 }
