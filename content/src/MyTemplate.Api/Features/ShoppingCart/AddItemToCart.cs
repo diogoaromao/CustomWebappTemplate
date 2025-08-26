@@ -5,6 +5,7 @@ using MediatR;
 using MyTemplate.Api.Common.Errors;
 using MyTemplate.Api.Common.Extensions;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Features.Products;
 
 namespace MyTemplate.Api.Features.ShoppingCart;
 
@@ -54,27 +55,46 @@ public static class AddItemToCart
 
     internal sealed class Handler : IRequestHandler<Command, ErrorOr<Response>>
     {
-        // In a real application, you would inject repositories or DbContext
-        private static readonly List<Product> _products = new()
-        {
-            new() { Id = 1, Name = "Sample Product 1", Description = "A sample product", Price = 19.99m, CreatedAt = DateTime.UtcNow.AddDays(-5), UpdatedAt = DateTime.UtcNow.AddDays(-5) },
-            new() { Id = 2, Name = "Sample Product 2", Description = "Another sample product", Price = 29.99m, CreatedAt = DateTime.UtcNow.AddDays(-3), UpdatedAt = DateTime.UtcNow.AddDays(-3) },
-            new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
-        };
-
+        private readonly ISender _sender;
         private static readonly Dictionary<string, Cart> _carts = new();
+
+        public Handler(ISender sender)
+        {
+            _sender = sender;
+        }
 
         public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
         {
-            // Simulate async database operations
-            await Task.Delay(10, cancellationToken);
-
-            // Find the product (depends on Products feature)
-            var product = _products.FirstOrDefault(p => p.Id == request.ProductId);
-            if (product is null)
+            // Get the product using MediatR - proper separation of concerns
+            var getProductQuery = new GetProductById.Query { Id = request.ProductId };
+            
+            try
             {
+                var productResult = await _sender.Send(getProductQuery, cancellationToken);
+                
+                // In this case, GetProductById throws exceptions, but we convert to ErrorOr
+                // In a fully ErrorOr implementation, GetProductById would also return ErrorOr<Response>
+                var product = new Product
+                {
+                    Id = productResult.Id,
+                    Name = productResult.Name,
+                    Description = productResult.Description,
+                    Price = productResult.Price
+                };
+                
+                return await AddProductToCart(request, product, cancellationToken);
+            }
+            catch (Exception)
+            {
+                // Product not found or other error
                 return Errors.Product.NotFound;
             }
+        }
+
+        private async Task<ErrorOr<Response>> AddProductToCart(Command request, Product product, CancellationToken cancellationToken)
+        {
+            // Simulate async database operations
+            await Task.Delay(10, cancellationToken);
 
             // Get or create cart for user
             if (!_carts.TryGetValue(request.UserId, out var cart))
