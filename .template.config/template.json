@@ -50,6 +50,7 @@
     "TargetFrameworkOverride": {
       "type": "derived",
       "valueSource": "Framework",
+      "valueTransform": "identity",
       "fileRename": "net9.0",
       "replaces": "net9.0"
     }
