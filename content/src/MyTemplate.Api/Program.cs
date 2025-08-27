@@ -1,13 +1,42 @@
 using Carter;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MyTemplate.Api.Common.Behaviors;
+using MyTemplate.Api.Common.Configuration;
+using MyTemplate.Api.Common.Persistence;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var assembly = Assembly.GetExecutingAssembly();
+
+// Configure Environment Secrets Service
+builder.Services.Configure<EnvironmentSecretsOptions>(
+    builder.Configuration.GetSection(EnvironmentSecretsOptions.SectionName));
+builder.Services.AddHttpClient<IEnvironmentSecretsService, EnvironmentSecretsService>();
+
+// Get connection string based on environment
+var environmentSecretsService = builder.Services.BuildServiceProvider()
+    .GetRequiredService<IEnvironmentSecretsService>();
+var environment = builder.Environment.EnvironmentName.ToLower();
+var connectionString = await environmentSecretsService.GetConnectionStringAsync(environment);
+
+// Fallback to appsettings if no connection string found
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException($"No connection string found for environment: {environment}");
+}
+
+// Add Entity Framework
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddMediatR(cfg =>
 {
@@ -24,6 +53,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Ensure database is created in development
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    context.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();

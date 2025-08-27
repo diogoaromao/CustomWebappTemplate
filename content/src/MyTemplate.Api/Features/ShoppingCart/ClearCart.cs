@@ -2,9 +2,10 @@ using Carter;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MyTemplate.Api.Common.Errors;
-using MyTemplate.Api.Common.Extensions;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.ShoppingCart;
 
@@ -27,21 +28,27 @@ public static class ClearCart
 
     internal sealed class Handler : IRequestHandler<Command, ErrorOr<Success>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly Dictionary<string, Cart> _carts = new();
+        private readonly ApplicationDbContext _context;
+
+        public Handler(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<ErrorOr<Success>> Handle(Command request, CancellationToken cancellationToken)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.UserId == request.UserId, cancellationToken);
 
-            if (!_carts.TryGetValue(request.UserId, out var cart))
+            if (cart is null)
             {
                 return Errors.Cart.NotFound;
             }
 
             cart.Items.Clear();
             cart.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Result.Success;
         }
@@ -56,7 +63,10 @@ public class ClearCartEndpoint : ICarterModule
         {
             var command = new ClearCart.Command { UserId = userId };
             var result = await sender.Send(command);
-            return result.ToHttpResult();
+            return result.Match(
+                success => Results.NoContent(),
+                error => Results.BadRequest(error)
+            );
         })
         .WithName("ClearCart")
         .WithTags("Shopping Cart")

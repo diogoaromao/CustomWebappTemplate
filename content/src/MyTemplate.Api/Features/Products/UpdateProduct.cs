@@ -1,14 +1,17 @@
 using Carter;
+using ErrorOr;
 using FluentValidation;
 using MediatR;
-using MyTemplate.Api.Common.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using MyTemplate.Api.Common.Errors;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.Products;
 
 public static class UpdateProduct
 {
-    public class Command : IRequest<Response>
+    public class Command : IRequest<ErrorOr<Response>>
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -44,30 +47,29 @@ public static class UpdateProduct
         }
     }
 
-    internal sealed class Handler : IRequestHandler<Command, Response>
+    internal sealed class Handler : IRequestHandler<Command, ErrorOr<Response>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly List<Product> _products = new()
-        {
-            new() { Id = 1, Name = "Sample Product 1", Description = "A sample product", Price = 19.99m, CreatedAt = DateTime.UtcNow.AddDays(-5), UpdatedAt = DateTime.UtcNow.AddDays(-5) },
-            new() { Id = 2, Name = "Sample Product 2", Description = "Another sample product", Price = 29.99m, CreatedAt = DateTime.UtcNow.AddDays(-3), UpdatedAt = DateTime.UtcNow.AddDays(-3) },
-            new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
-        };
+        private readonly ApplicationDbContext _context;
 
-        public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
+        public Handler(ApplicationDbContext context)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            _context = context;
+        }
 
-            var product = _products.FirstOrDefault(p => p.Id == request.Id);
+        public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
             
             if (product is null)
-                throw new NotFoundException(nameof(Product), request.Id);
+                return Errors.Product.NotFound;
 
             product.Name = request.Name;
             product.Description = request.Description;
             product.Price = request.Price;
             product.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(cancellationToken);
 
             var response = new Response
             {
@@ -90,8 +92,11 @@ public class UpdateProductEndpoint : ICarterModule
         app.MapPut("/api/products/{id:int}", async (int id, UpdateProduct.Command command, ISender sender) =>
         {
             command.Id = id;
-            var response = await sender.Send(command);
-            return Results.Ok(response);
+            var result = await sender.Send(command);
+            return result.Match(
+                response => Results.Ok(response),
+                error => Results.NotFound(error)
+            );
         })
         .WithName("UpdateProduct")
         .WithTags("Products")

@@ -1,38 +1,41 @@
 using Carter;
+using ErrorOr;
 using MediatR;
-using MyTemplate.Api.Common.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using MyTemplate.Api.Common.Errors;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.Products;
 
 public static class DeleteProduct
 {
-    public class Command : IRequest
+    public class Command : IRequest<ErrorOr<Success>>
     {
         public int Id { get; set; }
     }
 
-    internal sealed class Handler : IRequestHandler<Command>
+    internal sealed class Handler : IRequestHandler<Command, ErrorOr<Success>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly List<Product> _products = new()
-        {
-            new() { Id = 1, Name = "Sample Product 1", Description = "A sample product", Price = 19.99m, CreatedAt = DateTime.UtcNow.AddDays(-5), UpdatedAt = DateTime.UtcNow.AddDays(-5) },
-            new() { Id = 2, Name = "Sample Product 2", Description = "Another sample product", Price = 29.99m, CreatedAt = DateTime.UtcNow.AddDays(-3), UpdatedAt = DateTime.UtcNow.AddDays(-3) },
-            new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
-        };
+        private readonly ApplicationDbContext _context;
 
-        public async Task Handle(Command request, CancellationToken cancellationToken)
+        public Handler(ApplicationDbContext context)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            _context = context;
+        }
 
-            var product = _products.FirstOrDefault(p => p.Id == request.Id);
+        public async Task<ErrorOr<Success>> Handle(Command request, CancellationToken cancellationToken)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
             
             if (product is null)
-                throw new NotFoundException(nameof(Product), request.Id);
+                return Errors.Product.NotFound;
 
-            _products.Remove(product);
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync(cancellationToken);
+            
+            return Result.Success;
         }
     }
 }
@@ -44,8 +47,11 @@ public class DeleteProductEndpoint : ICarterModule
         app.MapDelete("/api/products/{id:int}", async (int id, ISender sender) =>
         {
             var command = new DeleteProduct.Command { Id = id };
-            await sender.Send(command);
-            return Results.NoContent();
+            var result = await sender.Send(command);
+            return result.Match(
+                success => Results.NoContent(),
+                error => Results.NotFound(error)
+            );
         })
         .WithName("DeleteProduct")
         .WithTags("Products")

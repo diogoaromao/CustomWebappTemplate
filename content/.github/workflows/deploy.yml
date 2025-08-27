@@ -7,6 +7,16 @@ name: Build and Deploy
 #   pull_request:
 #     branches: [ main ]
 
+# Required GitHub Secrets:
+# - DOCKER_USERNAME: Docker Hub username
+# - DOCKER_PASSWORD: Docker Hub password/token
+# - PORTAINER_URL: Portainer instance URL (e.g., https://portainer.example.com)
+# - PORTAINER_USERNAME: Portainer username
+# - PORTAINER_PASSWORD: Portainer password
+# - PORTAINER_ENDPOINT_ID: Portainer endpoint ID (usually 1 or 2)
+# - STAGING_CONNECTION_STRING: PostgreSQL connection string for staging database
+# - PRODUCTION_CONNECTION_STRING: PostgreSQL connection string for production database
+
 env:
   REGISTRY: docker.io
   API_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/mytemplate-api
@@ -124,8 +134,36 @@ jobs:
         tags: ${{ steps.web-meta.outputs.tags }}
         labels: ${{ steps.web-meta.outputs.labels }}
 
-  deploy-api-staging:
+  migrate-database-staging:
     needs: [changes, build-api]
+    if: ${{ needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+
+    - name: Restore API dependencies
+      run: dotnet restore src/MyTemplate.Api/MyTemplate.Api.csproj
+
+    - name: Run database migrations - Staging
+      run: |
+        dotnet ef database update \
+          --project src/MyTemplate.Api/MyTemplate.Api.csproj \
+          --connection "${{ secrets.STAGING_CONNECTION_STRING }}"
+      env:
+        ASPNETCORE_ENVIRONMENT: Staging
+
+  deploy-api-staging:
+    needs: [changes, build-api, migrate-database-staging]
     if: ${{ needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     
@@ -177,7 +215,8 @@ jobs:
             "Image": "'${API_IMAGE_FULL}'",
             "Env": [
               "ASPNETCORE_ENVIRONMENT=Staging",
-              "ASPNETCORE_URLS=http://+:8080"
+              "ASPNETCORE_URLS=http://+:8080",
+              "ConnectionStrings__DefaultConnection=${{ secrets.STAGING_CONNECTION_STRING }}"
             ],
             "ExposedPorts": {"8080/tcp": {}},
             "HostConfig": {
@@ -258,8 +297,37 @@ jobs:
           "${{ secrets.PORTAINER_URL }}/api/endpoints/${{ secrets.PORTAINER_ENDPOINT_ID }}/docker/containers/$WEB_CONTAINER_ID/start" \
           -H "Authorization: Bearer $JWT_TOKEN"
 
-  deploy-api-production:
+  migrate-database-production:
     needs: [changes, build-api, deploy-api-staging]
+    if: ${{ needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+
+    - name: Restore API dependencies
+      run: dotnet restore src/MyTemplate.Api/MyTemplate.Api.csproj
+
+    - name: Run database migrations - Production
+      run: |
+        dotnet ef database update \
+          --project src/MyTemplate.Api/MyTemplate.Api.csproj \
+          --connection "${{ secrets.PRODUCTION_CONNECTION_STRING }}"
+      env:
+        ASPNETCORE_ENVIRONMENT: Production
+
+  deploy-api-production:
+    needs: [changes, build-api, deploy-api-staging, migrate-database-production]
     if: ${{ needs.changes.outputs.api == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     environment: production
@@ -312,7 +380,8 @@ jobs:
             "Image": "'${API_IMAGE_FULL}'",
             "Env": [
               "ASPNETCORE_ENVIRONMENT=Production",
-              "ASPNETCORE_URLS=http://+:8080"
+              "ASPNETCORE_URLS=http://+:8080",
+              "ConnectionStrings__DefaultConnection=${{ secrets.PRODUCTION_CONNECTION_STRING }}"
             ],
             "ExposedPorts": {"8080/tcp": {}},
             "HostConfig": {

@@ -1,13 +1,15 @@
 using Carter;
+using ErrorOr;
 using FluentValidation;
 using MediatR;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.Products;
 
 public static class CreateProduct
 {
-    public class Command : IRequest<Response>
+    public class Command : IRequest<ErrorOr<Response>>
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
@@ -39,20 +41,19 @@ public static class CreateProduct
         }
     }
 
-    internal sealed class Handler : IRequestHandler<Command, Response>
+    internal sealed class Handler : IRequestHandler<Command, ErrorOr<Response>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly List<Product> _products = new();
-        private static int _nextId = 1;
+        private readonly ApplicationDbContext _context;
 
-        public async Task<Response> Handle(Command request, CancellationToken cancellationToken)
+        public Handler(ApplicationDbContext context)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            _context = context;
+        }
 
+        public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
+        {
             var product = new Product
             {
-                Id = _nextId++,
                 Name = request.Name,
                 Description = request.Description,
                 Price = request.Price,
@@ -60,7 +61,8 @@ public static class CreateProduct
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _products.Add(product);
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync(cancellationToken);
 
             var response = new Response
             {
@@ -82,8 +84,11 @@ public class CreateProductEndpoint : ICarterModule
     {
         app.MapPost("/api/products", async (CreateProduct.Command command, ISender sender) =>
         {
-            var response = await sender.Send(command);
-            return Results.Created($"/api/products/{response.Id}", response);
+            var result = await sender.Send(command);
+            return result.Match(
+                response => Results.Created($"/api/products/{response.Id}", response),
+                error => Results.BadRequest(error)
+            );
         })
         .WithName("CreateProduct")
         .WithTags("Products")

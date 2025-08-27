@@ -1,12 +1,15 @@
 using Carter;
+using ErrorOr;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.Products;
 
 public static class GetProducts
 {
-    public class Query : IRequest<Response>
+    public class Query : IRequest<ErrorOr<Response>>
     {
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
@@ -29,23 +32,23 @@ public static class GetProducts
         public DateTime CreatedAt { get; set; }
     }
 
-    internal sealed class Handler : IRequestHandler<Query, Response>
+    internal sealed class Handler : IRequestHandler<Query, ErrorOr<Response>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly List<Product> _products = new()
-        {
-            new() { Id = 1, Name = "Sample Product 1", Description = "A sample product", Price = 19.99m, CreatedAt = DateTime.UtcNow.AddDays(-5), UpdatedAt = DateTime.UtcNow.AddDays(-5) },
-            new() { Id = 2, Name = "Sample Product 2", Description = "Another sample product", Price = 29.99m, CreatedAt = DateTime.UtcNow.AddDays(-3), UpdatedAt = DateTime.UtcNow.AddDays(-3) },
-            new() { Id = 3, Name = "Sample Product 3", Description = "Yet another sample product", Price = 39.99m, CreatedAt = DateTime.UtcNow.AddDays(-1), UpdatedAt = DateTime.UtcNow.AddDays(-1) }
-        };
+        private readonly ApplicationDbContext _context;
 
-        public async Task<Response> Handle(Query request, CancellationToken cancellationToken)
+        public Handler(ApplicationDbContext context)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            _context = context;
+        }
 
+        public async Task<ErrorOr<Response>> Handle(Query request, CancellationToken cancellationToken)
+        {
             var skip = (request.Page - 1) * request.PageSize;
-            var products = _products
+            
+            var totalCount = await _context.Products.CountAsync(cancellationToken);
+            
+            var products = await _context.Products
+                .OrderBy(p => p.Id)
                 .Skip(skip)
                 .Take(request.PageSize)
                 .Select(p => new ProductDto
@@ -56,12 +59,12 @@ public static class GetProducts
                     Price = p.Price,
                     CreatedAt = p.CreatedAt
                 })
-                .ToList();
+                .ToListAsync(cancellationToken);
 
             var response = new Response
             {
                 Products = products,
-                TotalCount = _products.Count,
+                TotalCount = totalCount,
                 Page = request.Page,
                 PageSize = request.PageSize
             };
@@ -78,8 +81,11 @@ public class GetProductsEndpoint : ICarterModule
         app.MapGet("/api/products", async (ISender sender, int page = 1, int pageSize = 10) =>
         {
             var query = new GetProducts.Query { Page = page, PageSize = pageSize };
-            var response = await sender.Send(query);
-            return Results.Ok(response);
+            var result = await sender.Send(query);
+            return result.Match(
+                response => Results.Ok(response),
+                error => Results.BadRequest(error)
+            );
         })
         .WithName("GetProducts")
         .WithTags("Products")

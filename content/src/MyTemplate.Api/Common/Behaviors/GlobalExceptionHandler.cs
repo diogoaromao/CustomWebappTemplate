@@ -1,6 +1,5 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
-using MyTemplate.Api.Common.Exceptions;
 using System.Net;
 using System.Text.Json;
 
@@ -44,12 +43,6 @@ public class GlobalExceptionHandler : IExceptionHandler
                     .ToDictionary(
                         g => g.Key,
                         g => g.Select(e => e.ErrorMessage).ToArray());
-                break;
-
-            case NotFoundException:
-                response.StatusCode = (int)HttpStatusCode.NotFound;
-                responseModel.Status = (int)HttpStatusCode.NotFound;
-                responseModel.Title = "Not Found";
                 break;
 
             default:

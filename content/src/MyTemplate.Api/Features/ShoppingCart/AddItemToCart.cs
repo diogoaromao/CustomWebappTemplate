@@ -2,9 +2,10 @@ using Carter;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MyTemplate.Api.Common.Errors;
-using MyTemplate.Api.Common.Extensions;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 using MyTemplate.Api.Features.Products;
 
 namespace MyTemplate.Api.Features.ShoppingCart;
@@ -56,48 +57,44 @@ public static class AddItemToCart
     internal sealed class Handler : IRequestHandler<Command, ErrorOr<Response>>
     {
         private readonly ISender _sender;
-        private static readonly Dictionary<string, Cart> _carts = new();
+        private readonly ApplicationDbContext _context;
 
-        public Handler(ISender sender)
+        public Handler(ISender sender, ApplicationDbContext context)
         {
             _sender = sender;
+            _context = context;
         }
 
         public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
         {
             // Get the product using MediatR - proper separation of concerns
             var getProductQuery = new GetProductById.Query { Id = request.ProductId };
+            var productResult = await _sender.Send(getProductQuery, cancellationToken);
             
-            try
+            if (productResult.IsError)
             {
-                var productResult = await _sender.Send(getProductQuery, cancellationToken);
-                
-                // In this case, GetProductById throws exceptions, but we convert to ErrorOr
-                // In a fully ErrorOr implementation, GetProductById would also return ErrorOr<Response>
-                var product = new Product
-                {
-                    Id = productResult.Id,
-                    Name = productResult.Name,
-                    Description = productResult.Description,
-                    Price = productResult.Price
-                };
-                
-                return await AddProductToCart(request, product, cancellationToken);
+                return productResult.FirstError;
             }
-            catch (Exception)
+            
+            var product = new Product
             {
-                // Product not found or other error
-                return Errors.Product.NotFound;
-            }
+                Id = productResult.Value.Id,
+                Name = productResult.Value.Name,
+                Description = productResult.Value.Description,
+                Price = productResult.Value.Price
+            };
+            
+            return await AddProductToCart(request, product, cancellationToken);
         }
 
         private async Task<ErrorOr<Response>> AddProductToCart(Command request, Product product, CancellationToken cancellationToken)
         {
-            // Simulate async database operations
-            await Task.Delay(10, cancellationToken);
-
             // Get or create cart for user
-            if (!_carts.TryGetValue(request.UserId, out var cart))
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.UserId == request.UserId, cancellationToken);
+
+            if (cart is null)
             {
                 cart = new Cart
                 {
@@ -105,7 +102,7 @@ public static class AddItemToCart
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
-                _carts[request.UserId] = cart;
+                _context.Carts.Add(cart);
             }
 
             // Check if item already exists in cart
@@ -116,16 +113,19 @@ public static class AddItemToCart
             }
             else
             {
-                cart.Items.Add(new CartItem
+                var cartItem = new CartItem
                 {
+                    UserId = request.UserId,
                     ProductId = product.Id,
                     ProductName = product.Name,
                     UnitPrice = product.Price,
                     Quantity = request.Quantity
-                });
+                };
+                cart.Items.Add(cartItem);
             }
 
             cart.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
 
             var response = new Response
             {
@@ -161,7 +161,10 @@ public class AddItemToCartEndpoint : ICarterModule
             };
 
             var result = await sender.Send(command);
-            return result.ToHttpResult();
+            return result.Match(
+                response => Results.Ok(response),
+                error => Results.BadRequest(error)
+            );
         })
         .WithName("AddItemToCart")
         .WithTags("Shopping Cart")

@@ -13,6 +13,7 @@ public class Cart
 
 public class CartItem
 {
+    public string UserId { get; set; } = string.Empty;
     public int ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public decimal UnitPrice { get; set; }

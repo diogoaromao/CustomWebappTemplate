@@ -2,9 +2,10 @@ using Carter;
 using ErrorOr;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using MyTemplate.Api.Common.Errors;
-using MyTemplate.Api.Common.Extensions;
 using MyTemplate.Api.Common.Models;
+using MyTemplate.Api.Common.Persistence;
 
 namespace MyTemplate.Api.Features.ShoppingCart;
 
@@ -49,15 +50,20 @@ public static class RemoveItemFromCart
 
     internal sealed class Handler : IRequestHandler<Command, ErrorOr<Response>>
     {
-        // In a real application, you would inject a repository or DbContext
-        private static readonly Dictionary<string, Cart> _carts = new();
+        private readonly ApplicationDbContext _context;
+
+        public Handler(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<ErrorOr<Response>> Handle(Command request, CancellationToken cancellationToken)
         {
-            // Simulate async database operation
-            await Task.Delay(10, cancellationToken);
+            var cart = await _context.Carts
+                .Include(c => c.Items)
+                .FirstOrDefaultAsync(c => c.UserId == request.UserId, cancellationToken);
 
-            if (!_carts.TryGetValue(request.UserId, out var cart))
+            if (cart is null)
             {
                 return Errors.Cart.NotFound;
             }
@@ -70,6 +76,7 @@ public static class RemoveItemFromCart
 
             cart.Items.Remove(item);
             cart.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync(cancellationToken);
 
             var response = new Response
             {
@@ -104,7 +111,10 @@ public class RemoveItemFromCartEndpoint : ICarterModule
             };
 
             var result = await sender.Send(command);
-            return result.ToHttpResult();
+            return result.Match(
+                response => Results.Ok(response),
+                error => Results.BadRequest(error)
+            );
         })
         .WithName("RemoveItemFromCart")
         .WithTags("Shopping Cart")
